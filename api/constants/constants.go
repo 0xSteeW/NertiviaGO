@@ -7,4 +7,5 @@ const (
 
 const (
 	EndpointUser = "https://supertiger.tk/api/user"
+	EndpointChannel = "https://supertiger.tk/api/messages/channels"
 )

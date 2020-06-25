@@ -1,9 +1,16 @@
 package nertivia
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Event interface {
 	Get() Event
+}
+
+type MessageSend struct {
+	Message string `json:"message"`
+	TempID string `json:"tempID"`
 }
 
 type UserEvent struct {
@@ -23,6 +30,16 @@ type User struct {
 	Tag string
 	Created int
 	About map[string]string `json:"about_me"`
+}
+
+type ChannelEvent struct {
+	Status bool
+	ChannelID string
+	Messages []map[string]interface{}
+}
+
+func (c ChannelEvent) Get() Event {
+	return c
 }
 
 func (u UserEvent) Get() Event {

@@ -1,7 +1,9 @@
 package nertivia
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	gosocketio "github.com/graarh/golang-socketio"
 	"github.com/graarh/golang-socketio/transport"
@@ -15,6 +17,7 @@ type Session struct {
 	Token string
 	Client *gosocketio.Client
 	State *State
+	Handlers []Handler
 }
 
 
@@ -78,16 +81,47 @@ func (s *Session) Open() error {
 	s.Client = client
 	return nil
 }
+// Handlers
 
-func (s *Session) GetUser(userID string) *UserEvent {
+func (s *Session) AddHandler(handler Handler) {
+	s.Handlers = append(s.Handlers, handler)
+}
+
+func (s *Session) GetUser(userID string) (*UserEvent,error) {
 	user := new(UserEvent)
 	end := globals.ReadConstants()
 	err := s.Request(user,end.EndpointUser,"/",userID)
 	if err != nil {
-		log.Fatal(err)
-		return &UserEvent{}
+		return &UserEvent{},err
 	}
-	return user
+	return user,nil
+}
+
+func (s *Session) GetChannel(channelID string) (*ChannelEvent,error) {
+	channel := new(ChannelEvent)
+	end := globals.ReadConstants()
+	err := s.Request(channel, end.EndpointChannel,"/",channelID)
+	if err != nil {
+		return &ChannelEvent{},err
+	}
+	return channel,nil
+}
+
+func (s *Session) ChannelMessageSend(channelID string, message string) error {
+	channel, err := s.GetChannel(channelID)
+	end := globals.ReadConstants()
+	if err != nil {
+		return errors.New("could not find channel "+channelID)
+	}
+	data := MessageSend{Message: message, TempID: "0"}
+	dataByte, _ := json.Marshal(data)
+	scode, err := s.Send(dataByte, end.EndpointChannel,"/",channel.ChannelID)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(scode)
+	return nil
 }
 
 func formatParams(strings []string) string {
@@ -97,7 +131,24 @@ func formatParams(strings []string) string {
 	}
 	return final
 }
-func (s *Session) Request(gettable Event,endpoint string, params ...string) error {
+
+func (s *Session) Send(data []byte, endpoint string, params ...string) (int,error) {
+	url := fmt.Sprint(endpoint,formatParams(params))
+	fmt.Println(string(data))
+	bodyPost := bytes.NewReader(data)
+	request, err := http.NewRequest("POST",url,bodyPost)
+	if err != nil {
+		return 0,err
+	}
+	request.Header.Set("Content-type","application/json")
+	request.Header.Set("Authorization",s.Token)
+	client := &http.Client{}
+	response, err := client.Do(request)
+	defer response.Body.Close()
+	return response.StatusCode,err
+}
+
+func (s *Session) Request(event Event,endpoint string, params ...string) error {
 	url := fmt.Sprint(endpoint,formatParams(params))
 	fmt.Println(url)
 	request, err := http.NewRequest("GET",url, nil)
@@ -115,7 +166,7 @@ func (s *Session) Request(gettable Event,endpoint string, params ...string) erro
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(body, gettable)
+	err = json.Unmarshal(body, event)
 	if err != nil {
 		log.Fatal(err)
 		return err
