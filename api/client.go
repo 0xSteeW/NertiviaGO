@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	gosocketio "github.com/graarh/golang-socketio"
-	"github.com/graarh/golang-socketio/transport"
+	gosocketio "github.com/mtfelian/golang-socketio"
+	"github.com/mtfelian/golang-socketio/transport"
 	"io/ioutil"
 	"log"
 	"nertivia/globals"
@@ -14,17 +14,17 @@ import (
 )
 
 type Session struct {
-	Token string
-	Client *gosocketio.Client
-	State *State
-	Handlers []Handler
+	Token   string
+	Client  *gosocketio.Client
+	State   *State
+	Channel *gosocketio.Channel
 }
-
 
 type sidResponse struct {
-	SID string
+	SID      string
 	Upgrades interface{}
 }
+
 // New creates a new session struct with provided token
 func New(token string) *Session {
 	sess := new(Session)
@@ -32,20 +32,22 @@ func New(token string) *Session {
 	return sess
 }
 
-func getSID() (string,error) {
+func getSID() (string, error) {
 	end := globals.ReadConstants()
-	res, err := http.Get(end.EndpointURL)
+	res, err := http.Get("https://" + end.EndpointURL + "/socket.io/?EIO=3&transport=polling")
 	if err != nil {
-		return "",err
+		return "", err
 	}
 	defer res.Body.Close()
 	b, _ := ioutil.ReadAll(res.Body)
+	fmt.Println(string(b))
 	sidResp := new(sidResponse)
-	format := b[4:len(b)-4]
-	err = json.Unmarshal(format,sidResp)
+	format := b[4 : len(b)-4]
+	err = json.Unmarshal(format, sidResp)
 	if err != nil {
 		fmt.Println(err)
 	}
+	fmt.Println(sidResp.SID)
 	return sidResp.SID, nil
 }
 
@@ -67,55 +69,84 @@ func (s *Session) Ping() bool {
 // Open creates a websocket with socket.io using the provided token.
 func (s *Session) Open() error {
 	end := globals.ReadConstants()
-	url := gosocketio.GetUrl(end.EndpointURL, 443, true)
-	fmt.Println(url)
-	client, err := gosocketio.Dial(url,transport.GetDefaultWebsocketTransport())
+	client, err := gosocketio.Dial(
+		gosocketio.AddrWebsocket(end.EndpointURL, 443, true),
+		transport.DefaultWebsocketTransport(),
+	)
 	if err != nil {
+		log.Fatal(err)
 		return err
 	}
-	authData := getAuth(s.Token)
-	err = client.Emit("POST",authData)
+	err = client.On(gosocketio.OnConnection, func(channel *gosocketio.Channel) { fmt.Println("Connected to Nertivia websocket.") })
 	if err != nil {
+		log.Fatal(err)
 		return err
 	}
+	auth := make(map[string]string)
+	auth["token"] = s.Token
+	client.Emit("authentication", auth)
+	err = client.On("success", func(channel *gosocketio.Channel, data interface{}) { fmt.Println("Authorized") })
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	s.Channel = client.Channel
 	s.Client = client
 	return nil
 }
+
 // Handlers
 
-func (s *Session) AddHandler(handler Handler) {
-	s.Handlers = append(s.Handlers, handler)
+func (s *Session) OnMessage(handler func(*Session, *MessageCreate)) error {
+	fmt.Println("Adding handler")
+	messageCreate := NewMessageHandler()
+	err := s.Client.On(OnMessageCreate, func(c *gosocketio.Channel, data interface{}) {
+		body, err := json.Marshal(data)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = json.Unmarshal(body, messageCreate)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		handler(s, messageCreate)
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (s *Session) GetUser(userID string) (*UserEvent,error) {
+func (s *Session) GetUser(userID string) (*UserEvent, error) {
 	user := new(UserEvent)
 	end := globals.ReadConstants()
-	err := s.Request(user,end.EndpointUser,"/",userID)
+	err := s.Request(user, end.EndpointUser, "/", userID)
 	if err != nil {
-		return &UserEvent{},err
+		return &UserEvent{}, err
 	}
-	return user,nil
+	return user, nil
 }
 
-func (s *Session) GetChannel(channelID string) (*ChannelEvent,error) {
+func (s *Session) GetChannel(channelID string) (*ChannelEvent, error) {
 	channel := new(ChannelEvent)
 	end := globals.ReadConstants()
-	err := s.Request(channel, end.EndpointChannel,"/",channelID)
+	err := s.Request(channel, end.EndpointChannel, "/", channelID)
 	if err != nil {
-		return &ChannelEvent{},err
+		return &ChannelEvent{}, err
 	}
-	return channel,nil
+	return channel, nil
 }
 
 func (s *Session) ChannelMessageSend(channelID string, message string) error {
 	channel, err := s.GetChannel(channelID)
 	end := globals.ReadConstants()
 	if err != nil {
-		return errors.New("could not find channel "+channelID)
+		return errors.New("could not find channel " + channelID)
 	}
 	data := MessageSend{Message: message, TempID: "0"}
 	dataByte, _ := json.Marshal(data)
-	scode, err := s.Send(dataByte, end.EndpointChannel,"/",channel.ChannelID)
+	scode, err := s.Send(dataByte, end.EndpointChannel, "/", channel.ChannelID)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -132,30 +163,30 @@ func formatParams(strings []string) string {
 	return final
 }
 
-func (s *Session) Send(data []byte, endpoint string, params ...string) (int,error) {
-	url := fmt.Sprint(endpoint,formatParams(params))
+func (s *Session) Send(data []byte, endpoint string, params ...string) (int, error) {
+	url := fmt.Sprint(endpoint, formatParams(params))
 	fmt.Println(string(data))
 	bodyPost := bytes.NewReader(data)
-	request, err := http.NewRequest("POST",url,bodyPost)
+	request, err := http.NewRequest("POST", url, bodyPost)
 	if err != nil {
-		return 0,err
+		return 0, err
 	}
-	request.Header.Set("Content-type","application/json")
-	request.Header.Set("Authorization",s.Token)
+	request.Header.Set("Content-type", "application/json")
+	request.Header.Set("Authorization", s.Token)
 	client := &http.Client{}
 	response, err := client.Do(request)
 	defer response.Body.Close()
-	return response.StatusCode,err
+	return response.StatusCode, err
 }
 
-func (s *Session) Request(event Event,endpoint string, params ...string) error {
-	url := fmt.Sprint(endpoint,formatParams(params))
+func (s *Session) Request(event Event, endpoint string, params ...string) error {
+	url := fmt.Sprint(endpoint, formatParams(params))
 	fmt.Println(url)
-	request, err := http.NewRequest("GET",url, nil)
+	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Authorization",s.Token)
+	request.Header.Set("Authorization", s.Token)
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {

@@ -10,32 +10,32 @@ type Event interface {
 
 type MessageSend struct {
 	Message string `json:"message"`
-	TempID string `json:"tempID"`
+	TempID  string `json:"tempID"`
 }
 
 type UserEvent struct {
-	User *User
+	User             *User
 	CommonServersArr []string
 	CommonFriendsArr []string
-	IsBlocked bool
+	IsBlocked        bool
 }
 
 type User struct {
-	ID string `json:"_id"`
-	Avatar string
-	Admin int
-	Badges []int
+	ID       string `json:"_id"`
+	Avatar   string
+	Admin    int
+	Badges   []int
 	Username string
 	UniqueID string
-	Tag string
-	Created int
-	About map[string]string `json:"about_me"`
+	Tag      string
+	Created  int
+	About    map[string]string `json:"about_me"`
 }
 
 type ChannelEvent struct {
-	Status bool
+	Status    bool
 	ChannelID string
-	Messages []map[string]interface{}
+	Messages  []map[string]interface{}
 }
 
 func (c ChannelEvent) Get() Event {
@@ -46,6 +46,10 @@ func (u UserEvent) Get() Event {
 	return u
 }
 
-func (u *UserEvent) String() string {
-	return fmt.Sprint(u.User.Username,"#",u.User.Tag)
+func (u *User) String() string {
+	return fmt.Sprint(u.Username, "#", u.Tag)
 }
+
+const (
+	OnMessageCreate = "receiveMessage"
+)
