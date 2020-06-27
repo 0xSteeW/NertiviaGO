@@ -170,19 +170,19 @@ func createButtonPayload(buttons []string) *buttonPayload {
 	for _, button := range buttons {
 		bp.add(button,button)
 	}
-	fmt.Println(bp.Buttons)
 	return bp
 }
 
 func (s *Session) ChannelMessageSendWithButtons(channelID string, message string, buttons ...string) error {
-	channel, _ := s.GetChannel(channelID)
 	end := globals.ReadConstants()
 	dataRaw := createButtonPayload(buttons)
+	dataRaw.Message = message
+	dataRaw.TempID = "0"
 	data, err := json.Marshal(dataRaw)
 	if err != nil {
 		return err
 	}
-	_, err = s.Send(data, end.EndpointChannel,"/",channel.ChannelID)
+	_, err = s.Send(data, end.EndpointChannel,"/",channelID)
 	return err
 }
 
@@ -196,7 +196,6 @@ func formatParams(strings []string) string {
 
 func (s *Session) Send(data []byte, endpoint string, params ...string) (int, error) {
 	url := fmt.Sprint(endpoint, formatParams(params))
-	fmt.Println(string(data))
 	bodyPost := bytes.NewReader(data)
 	request, err := http.NewRequest("POST", url, bodyPost)
 	if err != nil {
@@ -207,7 +206,8 @@ func (s *Session) Send(data []byte, endpoint string, params ...string) (int, err
 	client := &http.Client{}
 	response, err := client.Do(request)
 	defer response.Body.Close()
-	return response.StatusCode, err
+	b,_ := ioutil.ReadAll(response.Body)
+	return response.StatusCode, errors.New(string(b))
 }
 
 func (s *Session) Request(event Event, endpoint string, params ...string) error {

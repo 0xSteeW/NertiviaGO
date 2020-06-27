@@ -18,6 +18,14 @@ func NewRouter(prefix string) *Router {
 	return r
 }
 
+func (r *Router) RemovePrefixAndCommand(command string) string {
+	content := strings.Split(command, " ")
+	if len(content) == 0 {
+		return command
+	}
+	return strings.Join(content[1:len(content)], " ")
+}
+
 func (r *Router) Route(content string) {
 	if !strings.HasPrefix(content, r.Prefix) {
 		return

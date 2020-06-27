@@ -1,17 +1,19 @@
 package nertivia
 
 type buttonPayload struct {
-	Buttons []button `json:"buttons"`
+	Message string `json:"message"`
+	TempID string `json:"tempID"`
+	Buttons []*button `json:"buttons"`
 }
 
-func (bp buttonPayload) add(id string, name string) {
+func (bp *buttonPayload) add(id string, name string) {
 	btn := new(button)
-	btn.id = id
-	btn.name = name
-	bp.Buttons = append(bp.Buttons, *btn)
+	btn.ID = id
+	btn.Name = name
+	bp.Buttons = append(bp.Buttons, btn)
 }
 
 type button struct {
-	id string
-	name string
+	ID string `json:"id"`
+	Name string `json:"name"`
 }
