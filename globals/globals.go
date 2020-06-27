@@ -9,6 +9,7 @@ type Constants struct {
 	WebsocketURL string
 	EndpointUser string
 	EndpointChannel string
+	EndpointServer string
 }
 
 func ReadConstants() *Constants {
@@ -17,5 +18,6 @@ func ReadConstants() *Constants {
 	cst.WebsocketURL = globalconstants.WebsocketURL
 	cst.EndpointUser = globalconstants.EndpointUser
 	cst.EndpointChannel = globalconstants.EndpointChannel
+	cst.EndpointServer = globalconstants.EndpointServer
 	return cst
 }

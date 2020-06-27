@@ -11,13 +11,14 @@ import (
 	"log"
 	"nertivia/globals"
 	"net/http"
+	"time"
 )
 
 type Session struct {
 	Token   string
 	Client  *gosocketio.Client
 	State   *State
-	Channel *gosocketio.Channel
+	Timeout time.Duration
 }
 
 type sidResponse struct {
@@ -26,9 +27,14 @@ type sidResponse struct {
 }
 
 // New creates a new session struct with provided token
-func New(token string) *Session {
+func New(token string, timeout ...int) *Session {
 	sess := new(Session)
 	sess.Token = token
+	if timeout != nil {
+		sess.Timeout = time.Duration(timeout[0])
+	} else {
+		sess.Timeout = 10
+	}
 	return sess
 }
 
@@ -77,28 +83,25 @@ func (s *Session) Open() error {
 		log.Fatal(err)
 		return err
 	}
-	err = client.On(gosocketio.OnConnection, func(channel *gosocketio.Channel) { fmt.Println("Connected to Nertivia websocket.") })
-	if err != nil {
-		log.Fatal(err)
-		return err
-	}
 	auth := make(map[string]string)
 	auth["token"] = s.Token
 	client.Emit("authentication", auth)
-	err = client.On("success", func(channel *gosocketio.Channel, data interface{}) { fmt.Println("Authorized") })
-	if err != nil {
-		log.Fatal(err)
-		return err
+	logged := make(chan bool, 1)
+	err = client.On("success", func(channel *gosocketio.Channel, data interface{}) {
+		logged <- true
+		s.Client = client
+	})
+	select {
+		case <-logged:
+			return nil
+		case <-time.After(s.Timeout*time.Second):
+			return errors.New(fmt.Sprint("could not receive an authorization in ",s.Timeout," seconds"))
 	}
-	s.Channel = client.Channel
-	s.Client = client
-	return nil
 }
 
 // Handlers
 
 func (s *Session) OnMessage(handler func(*Session, *MessageCreate)) error {
-	fmt.Println("Adding handler")
 	messageCreate := NewMessageHandler()
 	err := s.Client.On(OnMessageCreate, func(c *gosocketio.Channel, data interface{}) {
 		body, err := json.Marshal(data)
@@ -138,6 +141,13 @@ func (s *Session) GetChannel(channelID string) (*ChannelEvent, error) {
 	return channel, nil
 }
 
+func (s *Session) GetServer(serverID string) (*ServerEvent, error) {
+	server := new(ServerEvent)
+	end := globals.ReadConstants()
+	err := s.Request(server, end.EndpointServer,"/",serverID)
+	return server, err
+}
+
 func (s *Session) ChannelMessageSend(channelID string, message string) error {
 	channel, err := s.GetChannel(channelID)
 	end := globals.ReadConstants()
@@ -153,6 +163,27 @@ func (s *Session) ChannelMessageSend(channelID string, message string) error {
 	}
 	fmt.Println(scode)
 	return nil
+}
+
+func createButtonPayload(buttons []string) *buttonPayload {
+	bp := new(buttonPayload)
+	for _, button := range buttons {
+		bp.add(button,button)
+	}
+	fmt.Println(bp.Buttons)
+	return bp
+}
+
+func (s *Session) ChannelMessageSendWithButtons(channelID string, message string, buttons ...string) error {
+	channel, _ := s.GetChannel(channelID)
+	end := globals.ReadConstants()
+	dataRaw := createButtonPayload(buttons)
+	data, err := json.Marshal(dataRaw)
+	if err != nil {
+		return err
+	}
+	_, err = s.Send(data, end.EndpointChannel,"/",channel.ChannelID)
+	return err
 }
 
 func formatParams(strings []string) string {

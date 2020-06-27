@@ -50,6 +50,21 @@ func (u *User) String() string {
 	return fmt.Sprint(u.Username, "#", u.Tag)
 }
 
+//Server event
+type ServerEvent struct {
+	Name string
+	Avatar string
+	DefaultChannel string `json:"default_channel_id"`
+	ID string `json:"server_id"`
+	Created int
+	Banner string
+}
+
+func (s *ServerEvent) Get() Event {
+	return s
+}
+
 const (
 	OnMessageCreate = "receiveMessage"
+	OnButtonClick = "messageButtonClicked"
 )
