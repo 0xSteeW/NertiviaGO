@@ -94,7 +94,7 @@ func (s *Session) Open() error {
 		err := json.Unmarshal(state, updateState)
 		s.State = *updateState
 		if err != nil {
-			fmt.Println(err)
+			log.Fatal(err)
 			return
 		}
 		logged <- true
