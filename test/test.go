@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	client := nertivia.New("BOT_TOKEN", 5)
+	client := nertivia.New("", 5)
 	err := client.Open()
 	if err != nil {
 		log.Fatal(err)
