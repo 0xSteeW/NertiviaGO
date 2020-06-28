@@ -21,12 +21,12 @@ type UserEvent struct {
 }
 
 type User struct {
-	ID       string `json:"_id"`
+	HiddenID string `json:"_id"`
 	Avatar   string
 	Admin    int
 	Badges   []int
 	Username string
-	UniqueID string
+	ID       string `json:"uniqueID"`
 	Tag      string
 	Created  int
 	About    map[string]string `json:"about_me"`
