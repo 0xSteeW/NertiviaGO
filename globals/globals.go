@@ -1,15 +1,15 @@
 package globals
 
 import (
-	globalconstants "nertivia/api/constants"
+	globalconstants "nertiviago/api/constants"
 )
 
 type Constants struct {
-	EndpointURL string
-	WebsocketURL string
-	EndpointUser string
+	EndpointURL     string
+	WebsocketURL    string
+	EndpointUser    string
 	EndpointChannel string
-	EndpointServer string
+	EndpointServer  string
 }
 
 func ReadConstants() *Constants {

@@ -1,9 +1,5 @@
-package nertivia
-
+package nertiviago
 
 type State struct {
 	User *UserEvent
 }
-
-
-

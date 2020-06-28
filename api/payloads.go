@@ -1,8 +1,8 @@
-package nertivia
+package nertiviago
 
 type buttonPayload struct {
-	Message string `json:"message"`
-	TempID string `json:"tempID"`
+	Message string    `json:"message"`
+	TempID  string    `json:"tempID"`
 	Buttons []*button `json:"buttons"`
 }
 
@@ -14,6 +14,6 @@ func (bp *buttonPayload) add(id string, name string) {
 }
 
 type button struct {
-	ID string `json:"id"`
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }

@@ -1,4 +1,4 @@
-package nertivia
+package nertiviago
 
 type Handler interface {
 	GetHandler() string
@@ -9,7 +9,7 @@ type MessageCreate struct {
 
 type Message struct {
 	ChannelID string
-	Created   int
+	Created   int64
 	Creator   *User
 	Mentions  []*User
 	Content   string `json:"message"`

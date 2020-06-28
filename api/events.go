@@ -1,4 +1,4 @@
-package nertivia
+package nertiviago
 
 import (
 	"fmt"
@@ -52,12 +52,12 @@ func (u *User) String() string {
 
 //Server event
 type ServerEvent struct {
-	Name string
-	Avatar string
+	Name           string
+	Avatar         string
 	DefaultChannel string `json:"default_channel_id"`
-	ID string `json:"server_id"`
-	Created int
-	Banner string
+	ID             string `json:"server_id"`
+	Created        int
+	Banner         string
 }
 
 func (s *ServerEvent) Get() Event {
@@ -66,5 +66,5 @@ func (s *ServerEvent) Get() Event {
 
 const (
 	OnMessageCreate = "receiveMessage"
-	OnButtonClick = "messageButtonClicked"
+	OnButtonClick   = "messageButtonClicked"
 )

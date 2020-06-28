@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	nertivia "nertivia/api"
+	nertivia "nertiviago/api"
 	"os"
 	"os/signal"
 	"strings"
@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	client := nertivia.New("BOT_TOKEN",5)
+	client := nertivia.New("BOT_TOKEN", 5)
 	err := client.Open()
 	if err != nil {
 		log.Fatal(err)
@@ -25,6 +25,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Ready")
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-quit
@@ -55,14 +56,14 @@ func NewMessage(session *nertivia.Session, messageCreate *nertivia.MessageCreate
 	router.Add("button", func() {
 		buttonsJoined := router.RemovePrefixAndCommand(messageCreate.Message.Content)
 		buttons := strings.Split(buttonsJoined, " ")
-		session.ChannelMessageSendWithButtons(messageCreate.Message.ChannelID,"Here are your buttons:", buttons...)
+		session.ChannelMessageSendWithButtons(messageCreate.Message.ChannelID, "Here are your buttons:", buttons...)
 		session.Client.On("messageButtonClicked", func() {
 			session.ChannelMessageSend(messageCreate.Message.ChannelID, "Someone pressed the button!")
 		})
 	})
 	router.Add("help", func() {
 		var commands string
-		for command,_ := range router.Routes {
+		for command, _ := range router.Routes {
 			commands = commands + " " + command
 		}
 		session.ChannelMessageSend(messageCreate.Message.ChannelID, "Here are my current commands: "+commands)

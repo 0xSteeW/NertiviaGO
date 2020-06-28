@@ -1,4 +1,4 @@
-package nertivia
+package nertiviago
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"github.com/mtfelian/golang-socketio/transport"
 	"io/ioutil"
 	"log"
-	"nertivia/globals"
+	"nertiviago/globals"
 	"net/http"
 	"time"
 )
@@ -92,10 +92,10 @@ func (s *Session) Open() error {
 		s.Client = client
 	})
 	select {
-		case <-logged:
-			return nil
-		case <-time.After(s.Timeout*time.Second):
-			return errors.New(fmt.Sprint("could not receive an authorization in ",s.Timeout," seconds"))
+	case <-logged:
+		return nil
+	case <-time.After(s.Timeout * time.Second):
+		return errors.New(fmt.Sprint("could not receive an authorization in ", s.Timeout, " seconds"))
 	}
 }
 
@@ -144,7 +144,7 @@ func (s *Session) GetChannel(channelID string) (*ChannelEvent, error) {
 func (s *Session) GetServer(serverID string) (*ServerEvent, error) {
 	server := new(ServerEvent)
 	end := globals.ReadConstants()
-	err := s.Request(server, end.EndpointServer,"/",serverID)
+	err := s.Request(server, end.EndpointServer, "/", serverID)
 	return server, err
 }
 
@@ -168,7 +168,7 @@ func (s *Session) ChannelMessageSend(channelID string, message string) error {
 func createButtonPayload(buttons []string) *buttonPayload {
 	bp := new(buttonPayload)
 	for _, button := range buttons {
-		bp.add(button,button)
+		bp.add(button, button)
 	}
 	return bp
 }
@@ -182,7 +182,7 @@ func (s *Session) ChannelMessageSendWithButtons(channelID string, message string
 	if err != nil {
 		return err
 	}
-	_, err = s.Send(data, end.EndpointChannel,"/",channelID)
+	_, err = s.Send(data, end.EndpointChannel, "/", channelID)
 	return err
 }
 
@@ -206,7 +206,7 @@ func (s *Session) Send(data []byte, endpoint string, params ...string) (int, err
 	client := &http.Client{}
 	response, err := client.Do(request)
 	defer response.Body.Close()
-	b,_ := ioutil.ReadAll(response.Body)
+	b, _ := ioutil.ReadAll(response.Body)
 	return response.StatusCode, errors.New(string(b))
 }
 
