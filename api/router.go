@@ -3,17 +3,26 @@ package nertiviago
 import "strings"
 
 type Router struct {
-	Routes map[string]func()
+	Routes []route
 	Prefix string
 }
 
-func (r *Router) Add(route string, fun func()) {
-	r.Routes[route] = fun
+type route struct {
+	Name       string
+	Handler    func()
+	IgnoreCase bool
+}
+
+func (r *Router) Add(routeName string, ignoreCase bool, fun func()) {
+	newRoute := new(route)
+	newRoute.Name = routeName
+	newRoute.Handler = fun
+	newRoute.IgnoreCase = ignoreCase
+	r.Routes = append(r.Routes, *newRoute)
 }
 
 func NewRouter(prefix string) *Router {
 	r := new(Router)
-	r.Routes = make(map[string]func())
 	r.Prefix = prefix
 	return r
 }
@@ -26,14 +35,28 @@ func (r *Router) RemovePrefixAndCommand(command string) string {
 	return strings.Join(content[1:len(content)], " ")
 }
 
+func (r *Router) GetRoutes() []string {
+	var routes []string
+	for _, route := range r.Routes {
+		routes = append(routes, route.Name)
+	}
+	return routes
+}
+
 func (r *Router) Route(content string) {
 	if !strings.HasPrefix(content, r.Prefix) {
 		return
 	}
 	command := strings.TrimPrefix(content, r.Prefix)
-	for route, handler := range r.Routes {
-		if strings.HasPrefix(command, route) {
-			handler()
+	for _, route := range r.Routes {
+		newCommand := command
+		listenTo := route.Name
+		if route.IgnoreCase {
+			newCommand = strings.ToLower(newCommand)
+			listenTo = strings.ToLower(listenTo)
+		}
+		if strings.HasPrefix(newCommand, listenTo) {
+			route.Handler()
 		}
 	}
 }

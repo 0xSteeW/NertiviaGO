@@ -40,20 +40,20 @@ func NewMessage(session *nertivia.Session, messageCreate *nertivia.MessageCreate
 		}
 	}
 	router := nertivia.NewRouter("go!")
-	router.Add("gomez", func() {
+	router.Add("gomez", false, func() {
 		session.ChannelMessageSend(messageCreate.Message.ChannelID, "Hello! I'm Gomez!")
 	})
-	router.Add("ping", func() {
+	router.Add("ping", true, func() {
 		session.ChannelMessageSend(messageCreate.Message.ChannelID, "Pong!")
 	})
-	router.Add("info", func() {
+	router.Add("info", true, func() {
 		if len(messageCreate.Message.Mentions) == 0 {
 			return
 		}
 		mentioned := messageCreate.Message.Mentions[0]
 		session.ChannelMessageSend(messageCreate.Message.ChannelID, fmt.Sprint(mentioned))
 	})
-	router.Add("button", func() {
+	router.Add("button", true, func() {
 		buttonsJoined := router.RemovePrefixAndCommand(messageCreate.Message.Content)
 		buttons := strings.Split(buttonsJoined, " ")
 		session.ChannelMessageSendWithButtons(messageCreate.Message.ChannelID, "Here are your buttons:", buttons...)
@@ -61,11 +61,9 @@ func NewMessage(session *nertivia.Session, messageCreate *nertivia.MessageCreate
 			session.ChannelMessageSend(messageCreate.Message.ChannelID, "Someone pressed the button!")
 		})
 	})
-	router.Add("help", func() {
-		var commands string
-		for command, _ := range router.Routes {
-			commands = commands + " " + command
-		}
+	router.Add("help", true, func() {
+		commandsArray := router.GetRoutes()
+		commands := strings.Join(commandsArray, ",")
 		session.ChannelMessageSend(messageCreate.Message.ChannelID, "Here are my current commands: "+commands)
 	})
 	router.Route(messageCreate.Message.Content)

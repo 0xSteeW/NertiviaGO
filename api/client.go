@@ -88,6 +88,8 @@ func (s *Session) Open() error {
 	client.Emit("authentication", auth)
 	logged := make(chan bool, 1)
 	err = client.On("success", func(channel *gosocketio.Channel, data interface{}) {
+		state, _ := json.Marshal(data)
+		fmt.Println(string(state))
 		logged <- true
 		s.Client = client
 	})
