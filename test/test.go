@@ -34,7 +34,7 @@ func main() {
 
 func NewMessage(session *nertivia.Session, messageCreate *nertivia.MessageCreate) {
 	if len(messageCreate.Message.Mentions) != 0 {
-		if messageCreate.Message.Mentions[0].ID == "6681535949026889728" {
+		if messageCreate.Message.Mentions[0].ID == session.State.ThisClient.ID {
 			session.ChannelMessageSend(messageCreate.Message.ChannelID, "Hello! I'm Gomez. You can use my prefix go!")
 			return
 		}

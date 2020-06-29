@@ -17,7 +17,7 @@ import (
 type Session struct {
 	Token   string
 	Client  *gosocketio.Client
-	State   *State
+	State   State
 	Timeout time.Duration
 }
 
@@ -89,9 +89,20 @@ func (s *Session) Open() error {
 	logged := make(chan bool, 1)
 	err = client.On("success", func(channel *gosocketio.Channel, data interface{}) {
 		state, _ := json.Marshal(data)
+<<<<<<< HEAD
 		fmt.Println(string(state))
 		logged <- true
+=======
+>>>>>>> 0216de8895b8ad66ccf8c66f6857fa98dabb43d7
 		s.Client = client
+		updateState := new(State)
+		err := json.Unmarshal(state, updateState)
+		s.State = *updateState
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		logged <- true
 	})
 	select {
 	case <-logged:
