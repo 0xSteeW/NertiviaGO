@@ -16,7 +16,16 @@ type State struct {
 
 type settings struct {
 	GDriveLinked bool     `json:"GDriveLinked"`
-	CustomEmojis []string `json:"customEmojis"`
+	CustomEmojis []emoji `json:"customEmojis"`
+}
+
+type emoji struct {
+	V int `json:"__v"`
+	HiddenID string `json:"_id"`
+	ID string `json:"emojiID"`
+	Gif bool `json:"gif"`
+	Name string `json:"name"`
+	User string `json:"user"`
 }
 
 type dm struct {
