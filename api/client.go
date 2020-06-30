@@ -2,6 +2,7 @@ package nertiviago
 
 import (
 	"bytes"
+	"os"
 	"encoding/json"
 	"errors"
 	"fmt"
