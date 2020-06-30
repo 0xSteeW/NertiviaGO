@@ -5,7 +5,7 @@ type State struct {
 	DMs               []dm           `json:"dms"`
 	MemberStatuses    [][]string     `json:"memberStatusArr"`
 	LoginResponse     string         `json:"message"`
-	MutedChannels     []ChannelEvent `json:"mutedChannels"`
+	MutedChannels     []string `json:"mutedChannels"`
 	Notifications     []notification
 	ProgramActivities []interface{}  `json:"programActivityArr"`
 	ServerMembers     []serverMember `json:"serverMembers"`
